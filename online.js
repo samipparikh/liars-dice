@@ -169,7 +169,7 @@ class OnlineGame {
         document.getElementById('online-current-player').textContent = isMyTurn ? 'Your Turn!' : `${(players[currentPlayerId] || {}).name}'s Turn`;
 
         const diceContainer = document.getElementById('online-your-dice');
-        diceContainer.innerHTML = myDice.map(d => `<div class="die">${['','⚀','⚁','⚂','⚃','⚄','⚅'][d]}</div>`).join('');
+        diceContainer.innerHTML = myDice.map(d => `<div class="die"><span class="die-icon">${['','⚀','⚁','⚂','⚃','⚄','⚅'][d]}</span><span class="die-number">${d}</span></div>`).join('');
 
         const bidDisplay = document.getElementById('online-current-bid');
         if (room.currentBid) {
@@ -266,7 +266,7 @@ class OnlineGame {
         const container = document.getElementById('online-reveal-container');
         container.innerHTML = turnOrder.filter(id => (diceState[id] || {}).dice).map(id => {
             const dice = diceState[id].dice || [];
-            return `<div class="reveal-player"><span class="reveal-name">${(players[id] || {}).name}</span><div class="dice-display">${dice.map(d => `<div class="die ${d === rd.bid.face || (room.wildOnes && d === 1 && rd.bid.face !== 1) ? 'highlighted' : ''}">${['','⚀','⚁','⚂','⚃','⚄','⚅'][d]}</div>`).join('')}</div></div>`;
+            return `<div class="reveal-player"><span class="reveal-name">${(players[id] || {}).name}</span><div class="dice-display">${dice.map(d => `<div class="die ${d === rd.bid.face || (room.wildOnes && d === 1 && rd.bid.face !== 1) ? 'highlighted' : ''}"><span class="die-icon">${['','⚀','⚁','⚂','⚃','⚄','⚅'][d]}</span><span class="die-number">${d}</span></div>`).join('')}</div></div>`;
         }).join('');
 
         document.getElementById('online-reveal-result').innerHTML = `<p>Bid: ${rd.bid.quantity} × ${['','⚀','⚁','⚂','⚃','⚄','⚅'][rd.bid.face]}</p><p>Actual: ${rd.count}</p><p class="${rd.bidMet ? 'result-bad' : 'result-good'}">${rd.bidMet ? `Bid correct! ${rd.challengerName} loses a die.` : `Bid wrong! ${rd.loserName} loses a die.`}</p>${(diceState[rd.loserId] || {}).diceCount === 0 ? `<p class="eliminated">${rd.loserName} eliminated!</p>` : ''}`;

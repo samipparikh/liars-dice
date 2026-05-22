@@ -145,7 +145,7 @@ class Game {
 
     renderDice(dice, containerId) {
         const container = document.getElementById(containerId);
-        container.innerHTML = dice.map(d => `<div class="die">${this.dieFace(d)}</div>`).join('');
+        container.innerHTML = dice.map(d => `<div class="die"><span class="die-icon">${this.dieFace(d)}</span><span class="die-number">${d}</span></div>`).join('');
     }
 
     dieFace(value) {
@@ -225,7 +225,7 @@ class Game {
         container.innerHTML = this.players.filter(p => p.dice.length > 0).map(p => `
             <div class="reveal-player">
                 <span class="reveal-name">${p.name}</span>
-                <div class="dice-display">${p.dice.map(d => `<div class="die ${d === bid.face || (settings.wildOnes && d === 1 && bid.face !== 1) ? 'highlighted' : ''}">${this.dieFace(d)}</div>`).join('')}</div>
+                <div class="dice-display">${p.dice.map(d => `<div class="die ${d === bid.face || (settings.wildOnes && d === 1 && bid.face !== 1) ? 'highlighted' : ''}"><span class="die-icon">${this.dieFace(d)}</span><span class="die-number">${d}</span></div>`).join('')}</div>
             </div>
         `).join('');
 
