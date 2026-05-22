@@ -193,11 +193,13 @@ class OnlineGame {
     adjustOnlineBid(type, delta) {
         const qtyEl = document.getElementById('online-bid-quantity');
         const faceEl = document.getElementById('online-bid-face');
-        let qty = parseInt(qtyEl.textContent); let face = parseInt('⚀⚁⚂⚃⚄⚅'.indexOf(faceEl.textContent) >= 0 ? '⚀⚁⚂⚃⚄⚅'.indexOf(faceEl.textContent) + 1 : faceEl.textContent);
+        let qty = parseInt(qtyEl.textContent);
+        let face = parseInt(faceEl.dataset.face || 2);
         if (type === 'qty') qty = Math.max(1, qty + delta);
         else { const min = settings.wildOnes ? 2 : 1; face = Math.max(min, Math.min(6, face + delta)); }
         qtyEl.textContent = qty;
-        faceEl.textContent = ['','⚀','⚁','⚂','⚃','⚄','⚅'][face];
+        faceEl.dataset.face = face;
+        faceEl.innerHTML = `${'⚀⚁⚂⚃⚄⚅'[face - 1]} <span class="bid-face-number">${face}</span>`;
     }
 
     async onlineBid() {
@@ -207,8 +209,7 @@ class OnlineGame {
         if (turnOrder[room.currentTurnIndex] !== this.playerId) return;
 
         const qty = parseInt(document.getElementById('online-bid-quantity').textContent);
-        const faceText = document.getElementById('online-bid-face').textContent;
-        const face = '⚀⚁⚂⚃⚄⚅'.indexOf(faceText) + 1;
+        const face = parseInt(document.getElementById('online-bid-face').dataset.face || 2);
 
         if (room.currentBid) {
             if (qty < room.currentBid.quantity) return;

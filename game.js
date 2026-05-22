@@ -164,7 +164,7 @@ class Game {
 
     updateBidControls() {
         document.getElementById('bid-quantity').textContent = this.bidQuantity;
-        document.getElementById('bid-face').textContent = this.dieFace(this.bidFace);
+        document.getElementById('bid-face').innerHTML = `${this.dieFace(this.bidFace)} <span class="bid-face-number">${this.bidFace}</span>`;
         const valid = this.isValidBid(this.bidQuantity, this.bidFace);
         document.getElementById('btn-bid').disabled = !valid;
     }
