@@ -16,6 +16,7 @@ class Game {
     constructor() {
         this.screens = {
             menu: document.getElementById('menu-screen'),
+            aiSetup: document.getElementById('ai-setup-screen'),
             game: document.getElementById('game-screen'),
             reveal: document.getElementById('reveal-screen'),
             gameOver: document.getElementById('game-over-screen'),
@@ -23,6 +24,7 @@ class Game {
             settings: document.getElementById('settings-screen'),
             feedback: document.getElementById('feedback-screen'),
         };
+        this.isAIMode = false;
         this.playerCount = 3;
         this.players = [];
         this.currentRound = 1;
@@ -39,6 +41,11 @@ class Game {
         document.getElementById('btn-minus').addEventListener('click', () => this.changePlayerCount(-1));
         document.getElementById('btn-plus').addEventListener('click', () => this.changePlayerCount(1));
         document.getElementById('btn-start').addEventListener('click', () => this.startGame());
+        document.getElementById('btn-ai-game').addEventListener('click', () => this.showScreen('aiSetup'));
+        document.getElementById('btn-start-ai').addEventListener('click', () => this.startAIGame());
+        document.getElementById('btn-back-ai').addEventListener('click', () => this.showScreen('menu'));
+        document.getElementById('ai-minus').addEventListener('click', () => { const el = document.getElementById('ai-count'); el.textContent = Math.max(1, parseInt(el.textContent) - 1); });
+        document.getElementById('ai-plus').addEventListener('click', () => { const el = document.getElementById('ai-count'); el.textContent = Math.min(5, parseInt(el.textContent) + 1); });
         document.getElementById('btn-play-online').addEventListener('click', () => this.showOnlineMenu());
         document.getElementById('btn-settings').addEventListener('click', () => this.showScreen('settings'));
         document.getElementById('btn-back-settings').addEventListener('click', () => this.showScreen('menu'));
@@ -105,7 +112,18 @@ class Game {
             name: input.value.trim() || `Player ${i + 1}`,
             diceCount: settings.startingDice,
             dice: [],
+            isAI: false,
         }));
+        this.isAIMode = false;
+        this.currentRound = 1;
+        this.startRound();
+    }
+
+    startAIGame() {
+        const name = document.getElementById('ai-player-name').value.trim() || 'You';
+        const aiCount = parseInt(document.getElementById('ai-count').textContent) || 3;
+        this.players = createLDPlayers(name, aiCount);
+        this.isAIMode = true;
         this.currentRound = 1;
         this.startRound();
     }
@@ -134,13 +152,52 @@ class Game {
             this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
         }
         const player = this.players[this.currentPlayerIndex];
-        document.getElementById('current-player-name').textContent = player.name;
-        this.renderDice(player.dice, 'player-dice');
+        document.getElementById('current-player-name').textContent = player.name + (player.isAI ? ' 🤖' : '');
+
+        if (this.isAIMode) {
+            const humanPlayer = this.players.find(p => !p.isAI && p.diceCount > 0);
+            if (humanPlayer) this.renderDice(humanPlayer.dice, 'player-dice');
+        } else {
+            this.renderDice(player.dice, 'player-dice');
+        }
+
         this.updateBidDisplay();
         this.updateBidControls();
         this.updateScoreboard();
         document.getElementById('status-message').textContent = '';
         document.getElementById('btn-liar').disabled = !this.currentBid;
+
+        if (player.isAI) {
+            document.getElementById('bid-controls').style.opacity = '0.5';
+            document.getElementById('bid-controls').style.pointerEvents = 'none';
+            const delay = 1000 + Math.random() * 1500;
+            setTimeout(() => this.doAITurn(player), delay);
+        } else {
+            document.getElementById('bid-controls').style.opacity = '1';
+            document.getElementById('bid-controls').style.pointerEvents = 'auto';
+        }
+    }
+
+    doAITurn(player) {
+        const totalDice = this.players.reduce((sum, p) => sum + p.diceCount, 0);
+        const decision = getAIBidDecision(player, this.currentBid, totalDice, this.players);
+
+        if (decision.action === 'liar') {
+            document.getElementById('status-message').textContent = `${player.name} calls LIAR!`;
+            setTimeout(() => this.resolveLiar(), 800);
+        } else {
+            this.currentBid = {
+                quantity: decision.quantity,
+                face: decision.face,
+                playerIndex: this.currentPlayerIndex,
+                playerName: player.name
+            };
+            document.getElementById('status-message').textContent = `${player.name} bids ${decision.quantity} × ${this.dieFace(decision.face)}`;
+            setTimeout(() => {
+                this.currentPlayerIndex = this.getNextPlayer(this.currentPlayerIndex);
+                this.showTurn();
+            }, 1000);
+        }
     }
 
     renderDice(dice, containerId) {
