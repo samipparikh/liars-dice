@@ -1,3 +1,88 @@
+// ============ PROBABILITY & TIPS ============
+
+function calcBidProbability(myDice, currentBid, totalDice) {
+    if (!currentBid) return null;
+    const myMatching = myDice.filter(d => d === currentBid.face || (settings.wildOnes && d === 1 && currentBid.face !== 1)).length;
+    const otherDice = totalDice - myDice.length;
+    const probPerDie = settings.wildOnes && currentBid.face !== 1 ? 1 / 3 : 1 / 6;
+    const needed = currentBid.quantity - myMatching;
+
+    if (needed <= 0) return { prob: 0.95, label: 'Very Likely True' };
+
+    // Binomial probability approximation
+    const expectedOthers = otherDice * probPerDie;
+    const variance = otherDice * probPerDie * (1 - probPerDie);
+    const stdDev = Math.sqrt(variance);
+    if (stdDev === 0) return { prob: needed <= 0 ? 0.95 : 0.05, label: needed <= 0 ? 'Very Likely True' : 'Very Unlikely' };
+
+    const z = (needed - expectedOthers) / stdDev;
+    const prob = 1 - normalCDF(z);
+    return { prob: Math.min(0.95, Math.max(0.05, prob)), label: getProbLabel(prob) };
+}
+
+function normalCDF(x) {
+    const t = 1 / (1 + 0.2316419 * Math.abs(x));
+    const d = 0.3989422804 * Math.exp(-x * x / 2);
+    const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return x > 0 ? 1 - p : p;
+}
+
+function getProbLabel(prob) {
+    if (prob >= 0.75) return 'Very Likely True';
+    if (prob >= 0.55) return 'Probably True';
+    if (prob >= 0.40) return 'Coin Flip';
+    if (prob >= 0.25) return 'Probably Bluff';
+    return 'Very Likely Bluff';
+}
+
+function getHumanTips(myDice, currentBid, totalDice) {
+    const tips = [];
+    const faceCounts = [0, 0, 0, 0, 0, 0, 0];
+    myDice.forEach(d => faceCounts[d]++);
+    if (settings.wildOnes) { for (let f = 2; f <= 6; f++) faceCounts[f] += faceCounts[1]; }
+
+    const otherDice = totalDice - myDice.length;
+    const probPerDie = settings.wildOnes ? 1 / 3 : 1 / 6;
+
+    if (!currentBid) {
+        let bestFace = settings.wildOnes ? 2 : 1, bestCount = 0;
+        for (let f = (settings.wildOnes ? 2 : 1); f <= 6; f++) {
+            if (faceCounts[f] > bestCount) { bestCount = faceCounts[f]; bestFace = f; }
+        }
+        const safe = Math.floor(bestCount + otherDice * probPerDie * 0.6);
+        tips.push(`You have ${bestCount} matching ${bestFace}s — bid around ${safe} × ${bestFace} for safety`);
+        return { riskScore: null, tips };
+    }
+
+    const analysis = calcBidProbability(myDice, currentBid, totalDice);
+    const riskScore = Math.round((1 - analysis.prob) * 100);
+
+    if (analysis.prob >= 0.65) {
+        tips.push(`Current bid is likely true (${Math.round(analysis.prob * 100)}% chance). Raising is safer than calling LIAR.`);
+    } else if (analysis.prob <= 0.35) {
+        tips.push(`Current bid looks like a bluff (only ${Math.round(analysis.prob * 100)}% likely). Calling LIAR is a strong play.`);
+    } else {
+        tips.push(`It's close — about ${Math.round(analysis.prob * 100)}% the bid is real. Trust your read.`);
+    }
+
+    let bestFace = settings.wildOnes ? 2 : 1, bestCount = 0;
+    for (let f = (settings.wildOnes ? 2 : 1); f <= 6; f++) {
+        if (faceCounts[f] > bestCount) { bestCount = faceCounts[f]; bestFace = f; }
+    }
+    if (bestFace !== currentBid.face && bestCount > 0) {
+        tips.push(`You're strong in ${bestFace}s (${bestCount} showing). Consider bidding that face.`);
+    }
+
+    const myMatch = faceCounts[currentBid.face] || 0;
+    if (myMatch >= 2) {
+        tips.push(`You have ${myMatch} of the bid face — raising quantity is low risk.`);
+    }
+
+    return { riskScore, tips, probLabel: analysis.label };
+}
+
+// ============ AI LOGIC ============
+
 const AI_NAMES_LD = ['Bluffer', 'Shady', 'Dice Master', 'Snake Eyes', 'Lucky'];
 const AI_STYLES_LD = ['aggressive', 'conservative', 'balanced', 'tricky', 'cautious'];
 

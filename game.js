@@ -170,11 +170,13 @@ class Game {
         if (player.isAI) {
             document.getElementById('bid-controls').style.opacity = '0.5';
             document.getElementById('bid-controls').style.pointerEvents = 'none';
+            this.hideTips();
             const delay = 1000 + Math.random() * 1500;
             setTimeout(() => this.doAITurn(player), delay);
         } else {
             document.getElementById('bid-controls').style.opacity = '1';
             document.getElementById('bid-controls').style.pointerEvents = 'auto';
+            if (this.isAIMode) this.showTips();
         }
     }
 
@@ -198,6 +200,29 @@ class Game {
                 this.showTurn();
             }, 1000);
         }
+    }
+
+    showTips() {
+        const panel = document.getElementById('tips-panel');
+        if (!panel) return;
+        const humanPlayer = this.players.find(p => !p.isAI && p.diceCount > 0);
+        if (!humanPlayer) return;
+        const totalDice = this.players.reduce((sum, p) => sum + p.diceCount, 0);
+        const { riskScore, tips, probLabel } = getHumanTips(humanPlayer.dice, this.currentBid, totalDice);
+
+        let html = '';
+        if (riskScore !== null) {
+            const color = riskScore >= 65 ? '#e74c3c' : riskScore >= 40 ? '#f39c12' : '#27ae60';
+            html += `<div class="risk-meter"><span class="risk-label">Risk to Call LIAR:</span><span class="risk-score" style="color:${color}">${riskScore}%</span><span class="risk-desc">${probLabel}</span></div>`;
+        }
+        html += tips.map(t => `<div class="tip-item">${t}</div>`).join('');
+        panel.innerHTML = html;
+        panel.style.display = 'block';
+    }
+
+    hideTips() {
+        const panel = document.getElementById('tips-panel');
+        if (panel) panel.style.display = 'none';
     }
 
     renderDice(dice, containerId) {
